@@ -152,4 +152,4 @@ Against the matched 1,024-token SFT baseline, accuracy rose by **9.8 percentage 
 
 | Format reward | Outcome reward |
 | :---: | :---: |
-| ![RL training format reward](results/rl_format_reward.png) | ![RL training outcome reward](results/rl_outcome_reward.png) |
+| ![RL training format reward](results/train_rewards_format_reward_mean.png) | ![RL training outcome reward](results/rl_outcome_reward.png) |
