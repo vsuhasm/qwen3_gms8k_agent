@@ -117,8 +117,8 @@ The [SFT test evaluation](results/eval_sft_test.json) used greedy decoding, seed
 | Calculator use / answer submission | 41.0% / 41.4% |
 | Tool-call success rate | 89.1% |
 
-Answer accuracy also counts plain-text numeric answers; the outcome reward requires a correct tool submission. Per-problem completions and scores are in [the SFT predictions file](results/eval_sft_test.jsonl).
+Answer accuracy also counts plain-text numeric answers; the outcome reward requires a correct tool submission.
 
 | Mean token accuracy | Training loss | Gradient norm |
 | :---: | :---: | :---: |
-| ![SFT training mean token accuracy](image.png) | ![SFT training loss](image-1.png) | ![SFT training gradient norm](image-2.png) |
+| ![SFT training mean token accuracy](results/sft_mean_token_accuracy.png) | ![SFT training loss](results/sft_training_loss.png) | ![SFT training gradient norm](results/sft_gradient_norm.png) |
