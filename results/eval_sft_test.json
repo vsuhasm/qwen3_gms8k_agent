@@ -1,0 +1,26 @@
+{
+  "checkpoint": "/home/suhas/Documents/code/qwen3_gsm8k_agent_posttraining/results/checkpoints/sft",
+  "data": "/home/suhas/Documents/code/qwen3_gsm8k_agent_posttraining/data/gsm8k_test.jsonl",
+  "examples": 256,
+  "seed": 42,
+  "generation": {
+    "do_sample": false,
+    "max_new_tokens_per_turn": 192,
+    "max_turns": 8,
+    "max_completion_tokens": 768,
+    "enable_thinking": false
+  },
+  "accuracy": 0.35546875,
+  "mean_reward": 0.24609375,
+  "outcome_reward": 0.15234375,
+  "format_reward": 0.09375,
+  "format_compliance": 0.375,
+  "calculator_use_rate": 0.41015625,
+  "answer_submission_rate": 0.4140625,
+  "tool_call_success_rate": 0.8906752411575563,
+  "mean_tool_calls": 1.21484375,
+  "duration_seconds": 608.39,
+  "predictions": "results/eval_sft_test.jsonl",
+  "system_prompt": "As a faithful assistant follow this workflow:\n- Break down the problem into simple intermediate steps\n- At each step, invoke calculator tool for any arithmetic computation. Use the tool output provided to you in your next steps.\n- Once you arrive at your final answer in the end, invoke submit_answer tool with the final numerical answer and terminate.\n",
+  "one_calculator_per_turn_rate": 0.98828125
+}
