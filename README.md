@@ -1,6 +1,8 @@
 # Qwen3 GSM8K agent post-training
 
-Train `Qwen/Qwen3-0.6B` to solve GSM8K problems with a calculator and a final-answer tool. The pipeline creates tool-use rollouts for supervised fine-tuning (SFT), then trains a fresh LoRA adapter with GRPO on top of the merged SFT model.
+Train `Qwen/Qwen3-0.6B` to solve GSM8K problems with a calculator and a submit-answer tool. The pipeline creates tool-use rollouts for supervised fine-tuning (SFT), then trains a fresh LoRA adapter with GRPO on top of the SFT model.
+
+On the same 256-problem test subset with 1,024-token completions, GRPO raised answer accuracy from **35.5% to 45.3%** and format compliance from **37.5% to 64.8%**. Correct `submit_answer` calls rose from **15.2% to 37.5%**, while calculator use rose from **41.0% to 65.6%**.
 
 ## Installation
 
@@ -18,16 +20,20 @@ The data files in `data/` are ready to use. Run these commands in order:
 
 ```bash
 uv run src/train_sft.py
-uv run src/eval.py --max-completion-tokens 768
-uv run src/train_rl.py
 uv run src/eval.py \
-  --checkpoint results/checkpoints/rl/checkpoint-100 \
-  --output results/eval_rl_test.json \
-  --predictions results/eval_rl_test.jsonl \
-  --trackio-run-name rl-test-eval
+  --max-completion-tokens 1024 \
+  --output results/eval_sft_test_1024.json \
+  --predictions results/eval_sft_test_1024.jsonl \
+  --trackio-run-name sft-test-1024-eval
+uv run src/train_rl.py --max-steps 737
+uv run src/eval.py \
+  --checkpoint results/checkpoints/rl/checkpoint-737 \
+  --output results/eval_rl_checkpoint_737_test.json \
+  --predictions results/eval_rl_checkpoint_737_test.jsonl \
+  --trackio-run-name rl-checkpoint-737-test-eval
 ```
 
-The first evaluation measures the SFT baseline. The last command evaluates an RL checkpoint; change `checkpoint-100` to the step you want. Each evaluation writes a summary JSON and per-problem completions JSONL. Training and evaluation metrics are logged to Trackio. View them with:
+The first evaluation measures the SFT baseline. The last command evaluates an RL checkpoint; change `checkpoint-737` to the step you want. Each evaluation writes a summary JSON and per-problem completions JSONL. Training and evaluation metrics are logged to Trackio. View them with:
 
 ```bash
 uv run trackio show
@@ -93,11 +99,11 @@ Evaluation also reports answer accuracy (including plain-text numeric answers), 
 | Setting | SFT | RL (GRPO) | Test evaluation |
 | --- | --- | --- | --- |
 | Model | `Qwen/Qwen3-0.6B` | Merged SFT model + new LoRA | Selected SFT or RL adapter |
-| Duration | 1 epoch | 100 optimizer steps by default | 256 test problems |
+| Duration | 1 epoch | 737 steps in the reported run (100 by default) | 256 test problems |
 | Batch / accumulation | 1 / 1 | 4 / 1; 4 generations per prompt | Greedy decoding |
 | Learning rate / schedule | `1e-5` / cosine | `1e-5` / cosine | — |
 | Warmup | 5 steps | 5 steps | — |
-| Length limits | 1,024 tokens per SFT example | 1,024 completion tokens; 8 tool iterations | 192 new tokens per turn; 8 turns; 1,024 completion tokens by default (768 in the saved SFT baseline) |
+| Length limits | 1,024 tokens per SFT example | 1,024 completion tokens; 8 tool iterations | 192 new tokens per turn; 8 turns; 1,024 completion tokens in both reported test evaluations |
 | LoRA | Rank 16, alpha 16, dropout 0, all linear layers | Same configuration, newly initialized | — |
 
 SFT uses assistant-only loss, evaluates on the processed validation set at the end, and saves its adapter to `results/checkpoints/sft`. RL validates at the final step using two generations per validation prompt, saves checkpoints every 100 steps (or at the final step for shorter runs), and saves its adapter to `results/checkpoints/rl`. Training and evaluation use seed 42 and disable Qwen3 thinking mode.
@@ -106,7 +112,7 @@ SFT uses assistant-only loss, evaluates on the processed validation set at the e
 
 The saved [SFT training summary](results/sft_training.json) records one epoch over 181 processed training rollouts (181 optimizer steps), with an average training loss of **0.7586** and validation loss of **0.5447** on 102 processed validation rollouts.
 
-The [SFT test evaluation](results/eval_sft_test.json) used greedy decoding, seed 42, and a 768-token completion limit on 256 held-out problems:
+The [SFT test evaluation](results/eval_sft_test_1024.json) used greedy decoding, seed 42, and a 1,024-token completion limit on 256 held-out problems:
 
 | Metric | Result |
 | --- | ---: |
@@ -115,10 +121,35 @@ The [SFT test evaluation](results/eval_sft_test.json) used greedy decoding, seed
 | Correct `submit_answer` outcome reward | 15.2% (39/256) |
 | Format compliance / mean format reward | 37.5% / 0.0938 |
 | Calculator use / answer submission | 41.0% / 41.4% |
-| Tool-call success rate | 89.1% |
+| Tool-call success rate | 88.2% |
 
 Answer accuracy also counts plain-text numeric answers; the outcome reward requires a correct tool submission.
 
 | Mean token accuracy | Training loss | Gradient norm |
 | :---: | :---: | :---: |
 | ![SFT training mean token accuracy](results/sft_mean_token_accuracy.png) | ![SFT training loss](results/sft_training_loss.png) | ![SFT training gradient norm](results/sft_gradient_norm.png) |
+
+## RL results
+
+The [RL training summary](results/rl_training.json) records **737 GRPO steps** (one epoch) over 737 training problems, with a newly initialized LoRA adapter on the merged SFT model. At the final validation on 103 problems, mean reward was **0.6760**: outcome reward 0.4709 and format reward 0.2051. The recorded training loss was 0.0049; GRPO loss is a different objective from SFT loss.
+
+The [checkpoint-737 test evaluation](results/eval_rl_checkpoint_737_test.json) used greedy decoding, seed 42, and a 1,024-token completion limit on 256 held-out problems:
+
+| Metric | Result |
+| --- | ---: |
+| Answer accuracy | **45.3%** (116/256) |
+| Mean total reward | **0.5371** |
+| Correct `submit_answer` outcome reward | 37.5% (96/256) |
+| Format compliance / mean format reward | 64.8% / 0.1621 |
+| Calculator use / answer submission | 65.6% / 65.2% |
+| Tool-call success rate | 97.3% |
+
+Against the matched 1,024-token SFT baseline, accuracy rose by **9.8 percentage points**, correct tool submissions by **22.3 points**, and format compliance by **27.3 points**. Both evaluations used the same test problems and greedy decoding settings. Per-problem RL completions and scores are in [the checkpoint-737 predictions file](results/eval_rl_checkpoint_737_test.jsonl).
+
+| Training reward | Tool-call frequency | Mean completion length |
+| :---: | :---: | :---: |
+| ![RL training reward](results/rl_training_reward.png) | ![RL training tool-call frequency](results/rl_tool_call_frequency.png) | ![RL training mean completion length](results/rl_completion_mean_length.png) |
+
+| Format reward | Outcome reward |
+| :---: | :---: |
+| ![RL training format reward](results/rl_format_reward.png) | ![RL training outcome reward](results/rl_outcome_reward.png) |
