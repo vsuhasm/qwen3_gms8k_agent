@@ -144,7 +144,7 @@ The [checkpoint-737 test evaluation](results/eval_rl_checkpoint_737_test.json) u
 | Calculator use / answer submission | 65.6% / 65.2% |
 | Tool-call success rate | 97.3% |
 
-Against the matched 1,024-token SFT baseline, accuracy rose by **9.8 percentage points**, correct tool submissions by **22.3 points**, and format compliance by **27.3 points**. Both evaluations used the same test problems and greedy decoding settings. Per-problem RL completions and scores are in [the checkpoint-737 predictions file](results/eval_rl_checkpoint_737_test.jsonl).
+Against the matched 1,024-token SFT baseline, accuracy rose by **9.8 percentage points**, correct tool submissions by **22.3 points**, and format compliance by **27.3 points**. Both evaluations used the same test problems and greedy decoding settings.
 
 | Training reward | Tool-call frequency | Mean completion length |
 | :---: | :---: | :---: |
